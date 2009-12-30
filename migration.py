@@ -45,7 +45,7 @@ if database_user:
 if database_pw:
     db_kwargs['pw'] = database_pw
 
-db = web.database(dbn='', db='', user='')
+db = web.database(**db_kwargs)
 
 try:
     schema_record = db.select(migration_versioning_table,
