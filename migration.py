@@ -8,6 +8,7 @@ database_type = ''  # can be 'mysql', 'postgres', 'sqlite', 'firebird', 'mssql',
 database = ''       # name of the database to migrate
 database_user = ''  # name of the user that can access the database
 database_pw = ''    # password for the database user
+other_opts = {}     # other database options to pass to web.database
 
 # Migration-specific configuration
 migration_versioning_table = 'migration'
@@ -44,6 +45,8 @@ if database_user:
     db_kwargs['user'] = database_user
 if database_pw:
     db_kwargs['pw'] = database_pw
+
+db_kwargs.update(other_opts)
 
 db = web.database(**db_kwargs)
 
