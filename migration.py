@@ -61,12 +61,12 @@ except:
     try:
         with db.transaction():
             db.query("""
-                     CREATE TABLE %(migration_table)s (
+                     CREATE TABLE %s (
                         migration_version   FLOAT
-                     );
-                     INSERT INTO %(migration_table)s
+                     );""" % migration_versioning_table)
+            db.query("""INSERT INTO %s
                         VALUES (0.0);
-                     """ % {'migration_table': migration_versioning_table})
+                     """ % migration_versioning_table)
             current_version = 0.0
             print "[>>>] Created tables and set schema version to 0.0"
     except:
