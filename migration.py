@@ -1,17 +1,24 @@
-#!/bin/bash
-import web
+#!/usr/env/python python
 
 ### CONFIGURATION ###
 
+# Default profile
+default_profile = 'dev'
+
 # Database configuration
-database_type = ''  # can be 'mysql', 'postgres', 'sqlite', 'firebird', 'mssql', or 'oracle
-database = ''       # name of the database to migrate
-database_user = ''  # name of the user that can access the database
-database_pw = ''    # password for the database user
-other_opts = {}     # other database options to pass to web.database
+profiles = {
+    'dev': {
+        'database_type':    'sqlite',           # can be 'mysql', 'postgres', 'sqlite', 'firebird', 'mssql', or 'oracle
+        'database':         'development.db',   # name of the database to migrate
+        'database_user':    '',                 # name of the user that can access the database
+        'database_pw':      '',                 # password for the database user
+        'other_opts':       {},                 # other database options to pass to web.database
+    },
+}
 
 # Migration-specific configuration
 migration_versioning_table = 'migration'
+
 
 ### MIGRATIONS ###
 
@@ -30,52 +37,71 @@ migrations = {
          ENTER YOUR SQL HERE
          """,
 }
-
-
 ### NO NEED TO MODIFY ANYTHING BELOW THIS LINE ###
 
-web.config.debug = False
+def main():
+    import sys
 
-db_kwargs = {}
-if database_type:
+    import web
+
+    profile = len(sys.argv) > 0 and sys.argv[1] or deafault_profile or None
+
+    if profile in profiles.keys():
+        profile = profiles[profile]
+        print "[INFO] Using profile %s" % profile
+    else:
+        print "[ERR!] No default profile defined, and %s is not usable." % profile
+        sys.exit(2)
+
+    web.config.debug = False
+
+    database_type = profile.get('database_type', None)
+    database = profile.get('database', None)
+    if not all([database_type, database]):
+        print "[ERR!] No database type or database specified."
+        sys.exit(2)
+    database_user = profile.get('databse_user', '')
+    database_pw = profile.get('database_pw', '')
+    other_opts = profile.get('other_opts', {})
+
+
+    db_kwargs = {}
     db_kwargs['dbn'] = database_type
-if database:
     db_kwargs['db'] = database
-if database_user:
-    db_kwargs['user'] = database_user
-if database_pw:
-    db_kwargs['pw'] = database_pw
+    if database_user:
+        db_kwargs['user'] = database_user
+    if database_pw:
+        db_kwargs['pw'] = database_pw
 
-db_kwargs.update(other_opts)
+    db_kwargs.update(other_opts)
 
-db = web.database(**db_kwargs)
+    db = web.database(**db_kwargs)
 
-try:
-    schema_record = db.select(migration_versioning_table,
-                              what='migration_version',
-                              limit=1)
-    print "[<<<] Found migration table. Reading schema version."
-    current_version = schema_record[0].migration_version
-except:
-    print "[NFO] No migration table found."
     try:
-        with db.transaction():
-            db.query("""
-                     CREATE TABLE %s (
-                        migration_version   FLOAT
-                     );""" % migration_versioning_table)
-            db.query("""INSERT INTO %s
-                        VALUES (0.0);
-                     """ % migration_versioning_table)
-            current_version = 0.0
-            print "[>>>] Created tables and set schema version to 0.0"
+        schema_record = db.select(migration_versioning_table,
+                                  what='migration_version',
+                                  limit=1)
+        print "[<<<] Found migration table. Reading schema version."
+        current_version = schema_record[0].migration_version
     except:
-        print "[ERR] There was an error creating the migration table."
-        raise
+        print "[NFO] No migration table found."
+        try:
+            with db.transaction():
+                db.query("""
+                         CREATE TABLE %s (
+                            migration_version   FLOAT
+                         );""" % migration_versioning_table)
+                db.query("""INSERT INTO %s
+                            VALUES (0.0);
+                         """ % migration_versioning_table)
+                current_version = 0.0
+                print "[>>>] Created tables and set schema version to 0.0"
+        except:
+            print "[ERR] There was an error creating the migration table."
+            raise
 
-print "[NFO] Current schema version %s." % current_version
+    print "[NFO] Current schema version %s." % current_version
 
-def run_migrations():
     migration_versions = [i for i in sorted(migrations.keys()) if i > current_version]
     if len(migration_versions) < 1:
         print "[NFO] Schema already at latest version."
@@ -96,5 +122,6 @@ def run_migrations():
             else:
                 print "[OK!] SUCCESS"
 
+
 if __name__ == '__main__':
-    run_migrations()
+    main()
