@@ -6,6 +6,14 @@
 default_profile = 'dev'
 
 # Database configuration
+#
+# You may specify multiple profiles by adding appropriate keys in the profiles
+# dict. Any keys missing from a profile will use the default values. Only
+# ``database_type`` and ``database`` keys are required.
+# 
+# The first argument passed to the script will determine the profile to be
+# used. Otherwise, ``default_profile`` will be selected.
+#
 profiles = {
     'dev': {
         'database_type':    'sqlite',           # can be 'mysql', 'postgres', 'sqlite', 'firebird', 'mssql', or 'oracle
